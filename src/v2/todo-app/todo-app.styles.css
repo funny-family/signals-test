@@ -1,0 +1,11 @@
+@scope (.todo-container) {
+  :scope {
+    width: fit-content;
+    border: 1px solid black;
+    padding: 0.6em;
+  }
+
+  .todo-list {
+    margin-block-start: 2px;
+  }
+}
