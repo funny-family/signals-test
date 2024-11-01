@@ -8,4 +8,8 @@
   .todo-list {
     margin-block-start: 2px;
   }
+
+  .todo_completed {
+    text-decoration: line-through;
+  }
 }
