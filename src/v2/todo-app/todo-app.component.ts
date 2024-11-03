@@ -1,36 +1,17 @@
 import './todo-app.styles.css';
 import { createSignal } from '../index';
 
-class IndexedSet<T> extends Set<T> {
-  at(index: number) {
-    if (Math.abs(index) > this.size) {
-      return null;
-    }
-
-    var idx = index;
-    if (idx < 0) {
-      idx = this.size + index;
-    }
-
-    var counter = 0;
-    for (const elem of this) {
-      if (counter == idx) {
-        return elem;
-      }
-
-      counter += 1;
-    }
-  }
-}
-
 export var TodoApp = () => {
-  var todoSignal = createSignal();
+  var todoListSignal = createSignal();
+  window.todoListSignal = todoListSignal;
 
-  var todosMap = new IndexedSet<{
+  var todosMap = new Set<{
     id: number;
     title: string;
     completed: boolean;
   }>();
+  window.todosMap = todosMap;
+
   var globalId = 0;
 
   var container = document.createElement('div');
@@ -42,19 +23,21 @@ export var TodoApp = () => {
   var addTodoButton = document.createElement('button');
   addTodoButton.type = 'button';
   addTodoButton.textContent = 'add todo';
-  addTodoButton.addEventListener('click', (event) => {
-    todoSignal.trigger(() => {
-      const target = event.target as HTMLInputElement;
+  addTodoButton.addEventListener('click', () => {
+    if (input.value === '') {
+      return;
+    }
+
+    todoListSignal.trigger(() => {
       const id = globalId++;
-      const title = target.value;
-      const completed = true;
+      const title = input.value;
+      const completed = false;
 
       todosMap.add({
         id,
         title,
         completed,
       });
-      console.log({ todosMap });
     });
 
     input.value = '';
@@ -67,16 +50,40 @@ export var TodoApp = () => {
   container.appendChild(addTodoButton);
   container.appendChild(todoList);
 
-  var todoElement = document.createElement('li');
+  todoListSignal.track(() => {
+    var newChildren = Array.from(todosMap, (todo) => {
+      var todoNode = document.createElement('li');
 
-  todoSignal.track(() => {
-    var newChildren = Array.from({ length: todosMap.size }, (_, i) => {
-      const node = todoElement.cloneNode(true);
-      const value = todosMap.at(i);
+      const title = document.createElement('div');
+      title.appendChild(document.createTextNode(todo.title));
 
-      node.textContent = value?.title || '';
+      todo.completed
+        ? (title.style.textDecoration = 'line-through')
+        : (title.style.textDecoration = 'none');
 
-      return node;
+      const stateTodoButton = document.createElement('button');
+      stateTodoButton.type = 'button';
+      stateTodoButton.textContent = todo.completed ? '❌' : '✅';
+      stateTodoButton.addEventListener('click', () => {
+        todoListSignal.trigger(() => {
+          todo.completed = !todo.completed;
+        });
+      });
+
+      const deleteTodoButton = document.createElement('button');
+      deleteTodoButton.type = 'button';
+      deleteTodoButton.textContent = '🗑️';
+      deleteTodoButton.addEventListener('click', () => {
+        todoListSignal.trigger(() => {
+          todosMap.delete(todo);
+        });
+      });
+
+      todoNode.appendChild(title);
+      todoNode.appendChild(stateTodoButton);
+      todoNode.appendChild(deleteTodoButton);
+
+      return todoNode;
     });
 
     todoList.replaceChildren(...newChildren);
